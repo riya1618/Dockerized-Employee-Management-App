@@ -1,0 +1,48 @@
+version: '3.9'  # optional, modern Compose doesn't need version
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: ems-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: emsdb
+      MYSQL_USER: emsuser
+      MYSQL_PASSWORD: emspass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  backend:
+    image: ems-backend
+    container_name: ems-backend
+    restart: always
+    build:
+      context: ./backend   # your Spring Boot project folder
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/emsdb?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: emsuser
+      SPRING_DATASOURCE_PASSWORD: emspass
+    depends_on:
+      - mysql-db
+
+  frontend:
+    image: ems-frontend
+    container_name: ems-frontend
+    restart: always
+    build:
+      context: ./frontend   # your Vite React project folder
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    command: ["npm", "run", "dev", "--", "--host"]
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:
